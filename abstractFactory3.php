@@ -105,7 +105,7 @@ class ApplicationConfigurator
 
     if ($config === "Windows") {
       $factory = new WinFactory();
-    } else if ($config === "Mac") {
+    } else if ($config === "Darwin") {
       $factory = new MacFactory();
     } else {
       throw new Exception('Unknown operating system was identified');
