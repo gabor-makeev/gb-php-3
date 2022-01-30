@@ -2,29 +2,81 @@
 
 interface Notifier
 {
-    public function send($message);
+  public function send(String $message): void;
 }
 
-class BaseDecorator implements Notifier
+class BasicNotifier implements Notifier
 {
-    private Notifier $wrappee;
-
-    public function BaseDecorator($notifier)
-    {
-        echo "Some construction happened here";
-    }
-
-    public function send($message)
-    {
-        echo "The message was sent";
-    }
+  public function send(string $message): void
+  {
+    echo "Basic Notifier actions with the '$message' message were performed" . PHP_EOL;
+  }
 }
 
-class SMSDecorator extends BaseDecorator
+class NotifierDecorator implements Notifier
 {
-    public function send($message)
-    {
-        echo "The SMS message was sent";
-    }
+  protected Notifier $notifier;
+
+  public function __construct(Notifier $notifier)
+  {
+    $this->notifier = $notifier;
+  }
+
+  public function send(string $message): void
+  {
+    $this->notifier->send($message);
+  }
 }
 
+class EmailNotifierDecorator extends NotifierDecorator
+{
+  public function send(string $message): void
+  {
+    echo "Email message '$message' sent" . PHP_EOL;
+    parent::send($message);
+  }
+}
+
+class TelegramNotifierDecorator extends NotifierDecorator
+{
+  public function send(string $message): void
+  {
+    echo "Telegram message '$message' sent" . PHP_EOL;
+    parent::send($message);
+  }
+}
+
+class WhatsAppNotifierDecorator extends NotifierDecorator
+{
+  public function send(string $message): void
+  {
+    echo "WhatsApp message '$message' sent" . PHP_EOL;
+    parent::send($message);
+  }
+}
+
+$user = [
+  'NotificationConfigurations' => [
+    'email' => true,
+    'telegram' => true,
+    'whatsApp' => true
+  ]
+];
+
+function application($user, $message)
+{
+  $notifier = new BasicNotifier();
+  if ($user['NotificationConfigurations']['email']) {
+    $notifier = new EmailNotifierDecorator($notifier);
+  }
+  if ($user['NotificationConfigurations']['telegram']) {
+    $notifier = new TelegramNotifierDecorator($notifier);
+  }
+  if ($user['NotificationConfigurations']['whatsApp']) {
+    $notifier = new WhatsAppNotifierDecorator($notifier);
+  }
+
+  $notifier->send($message);
+}
+
+application($user, 'Hello world!');
