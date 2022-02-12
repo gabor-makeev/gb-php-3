@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+<script>
+  const arrSize = 5
+  let arr = []
+
+  for (let i = 0; i < arrSize; i++) {
+      arr.push(Math.floor(Math.random() * 100))
+  }
+
+  console.log(arr)
+
+  function bubbleSort(array) {
+      for (let i = 0; i < array.length; i++) {
+          for (let j = 0; j < array.length; j++) {
+              if (array[j] > array[j + 1]) {
+                  let temp = array[j];
+                  array[j] = array[j + 1];
+                  array[j + 1] = temp;
+              }
+          }
+      }
+      return array;
+  }
+
+  console.log(bubbleSort(arr));
+
+
+</script>
+</body>
+</html>
