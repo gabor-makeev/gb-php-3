@@ -1,103 +1,95 @@
 <?php
 
-$arrSize = 5;
+require_once "showArr.php";
+require_once "arrInit.php";
+require_once "swapElements.php";
+require_once "randomizeArr.php";
+
 $arr = [];
+arrInit($arr);
 
-for ($i = 0; $i < $arrSize; $i++) {
-  $arr[] = rand(1, 100);
-}
-
-function showArr($array)
+function bubbleSort($array): void
 {
-  echo PHP_EOL . "[";
-  foreach ($array as $idx => $item) {
-    echo " $idx = $item ";
-  }
-  echo "]" . PHP_EOL . PHP_EOL;
-}
+    $count = sizeof($array) - 1;
 
-function bubbleSort($array): array
-{
-  $count = sizeof($array) - 1;
+    showArr($array);
 
-  for ($i = 0; $i < $count; $i++) {
-    for ($j = 0; $j < $count; $j++) {
-      if ($array[$j] > $array[$j + 1]) {
-        $temp = $array[$j];
-        $array[$j] = $array[$j + 1];
-        $array[$j + 1] = $temp;
-      }
+    for ($i = 0; $i < $count; $i++) {
+        for ($j = 0; $j < $count; $j++) {
+            if ($array[$j] > $array[$j + 1]) {
+                $temp = $array[$j];
+                $array[$j] = $array[$j + 1];
+                $array[$j + 1] = $temp;
+            }
+        }
     }
-  }
-  return $array;
+    showArr($array);
 }
 
-//echo "Bubble sort example" . PHP_EOL;
-//echo "Array before: " . implode(', ', $arr) . PHP_EOL;
-//showArr($arr);
-//$arr = bubbleSort($arr);
-//showArr($arr);
-
-//echo "Array after: " . implode(', ', $arr);
+echo "Bubble Sorting:" . PHP_EOL;
+bubbleSort($arr);
 
 function shakerSort($array)
 {
-  $count = count($array);
-  $left = 0;
-  $right = $count - 1;
+    $count = count($array);
+    $left = 0;
+    $right = $count - 1;
 
-  showArr($array);
+    showArr($array);
 
-  do {
-    for ($i = $left; $i < $right; $i++) {
-      if ($array[$i] > $array[$i + 1]) {
-        list($array[$i], $array[$i + 1]) = array($array[$i + 1], $array[$i]);
-      }
-    }
-    $right -= 1;
-    for ($i = $right; $i > $left; $i--) {
-      if ($array[$i] < $array[$i - 1]) {
-        list($array[$i], $array[$i - 1]) = array($array[$i - 1], $array[$i]);
-      }
-    }
-    $left += 1;
-  } while ($left <= $right);
+    do {
+        for ($i = $left; $i < $right; $i++) {
+            if ($array[$i] > $array[$i + 1]) {
+                list($array[$i], $array[$i + 1]) = array($array[$i + 1], $array[$i]);
+            }
+        }
+        $right -= 1;
+        for ($i = $right; $i > $left; $i--) {
+            if ($array[$i] < $array[$i - 1]) {
+                list($array[$i], $array[$i - 1]) = array($array[$i - 1], $array[$i]);
+            }
+        }
+        $left += 1;
+    } while ($left <= $right);
 
-  showArr($array);
-
+    showArr($array);
 }
 
-//shakerSort($arr);
+echo "Shaker Sorting:" . PHP_EOL;
+shakerSort($arr);
 
-function quickSort($array, $low, $high)
+function quickSort(&$array, $low, $high)
 {
+    $i = $low;
+    $j = $high;
+    $pivot = $array[($low + $high) / 2];
 
-  $i = $low;
-  $j = $high;
-  $pivot = $array[rand(0, count($array) - 1)];
+    do {
+        while ($array[$i] < $pivot) ++$i;
+        while ($array[$j] > $pivot) --$j;
 
-  do {
-    while ($array[$i] < $pivot) ++$i;
-    while ($array[$j] > $pivot) --$j;
+        if ($i <= $j) {
+            swapElements($array, $i, $j);
+            $i++;
+            $j--;
+        }
+    } while ($i < $j);
 
-    if ($i <= $j) {
-      $temp = $array[$i];
-      $array[$i] = $array[$j];
-      $array[$j] = $temp;
-
-      $i++;
-      $j--;
+    if ($low < $j) {
+        quickSort($array, $low, $j);
     }
-  } while ($i < $j);
 
-  if ($low < $j) {
-    quickSort($array, $low, $j);
-  }
-
-  if ($i < $high) {
-    quickSort($array, $i, $high);
-  }
-
+    if ($i < $high) {
+        quickSort($array, $i, $high);
+    }
 }
 
+echo "Quick Sorting:" . PHP_EOL;
+showArr($arr);
 quickSort($arr, 0, count($arr) - 1);
+showArr($arr);
+
+echo "New randomized array: " . PHP_EOL;
+randomizeArr($arr);
+showArr($arr);
+
