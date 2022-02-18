@@ -94,17 +94,17 @@ class BinaryTree
 
 
 
-$m = new MathOperation(1, 2, "+");
-echo $m->calculate();
+//$m = new MathOperation(1, 2, "+");
+//echo $m->calculate();
 
-//$numbers = [2, 5, 7, 8, 10, 12, 1];
-//$binaryTree = new BinaryTree();
-//
-//foreach ($numbers as $number) {
-//    $binaryTree->insert($number);
-//}
-//
-//$binaryTree->delete(12);
-//
-//var_dump($binaryTree);
+$numbers = [2, 5, 7, 8, 10, 12, 1];
+$binaryTree = new BinaryTree();
+
+foreach ($numbers as $number) {
+    $binaryTree->insert($number);
+}
+
+$binaryTree->delete(12);
+
+var_dump($binaryTree);
 
