@@ -56,3 +56,6 @@ echo $et->calc() . PHP_EOL;
 
 $et = new ExpressionTree("42+7-$z");
 echo $et->calc() . PHP_EOL;
+
+$et = new ExpressionTree("(2+$x)-(2-$z+($y+2))");
+echo $et->calc() . PHP_EOL;

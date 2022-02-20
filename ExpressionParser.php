@@ -82,10 +82,10 @@ class ExpressionParser
         foreach ($expression as $elementIdx => $element) {
 
             if ($element === "(")
-                $priorityModifier = 3;
+                $priorityModifier += 2;
 
             if ($element === ")")
-                $priorityModifier = 0;
+                $priorityModifier -= 2;
 
             if (self::isOperator($element)) {
                 $operatorElements[] = [
