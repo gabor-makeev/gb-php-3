@@ -1,6 +1,5 @@
 <?php
 
-require_once "ExpressionTree.php";
 require_once "ExpressionTreeOperand.php";
 
 class ExpressionTreeOperation

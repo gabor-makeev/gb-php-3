@@ -6,21 +6,22 @@ require_once "ExpressionTreeOperation.php";
 
 class ExpressionTree
 {
-    public array $expression;
-    public ?ExpressionTreeOperation $root = null;
+    private array $expression;
+    private ?ExpressionTreeOperation $root = null;
+    private ExpressionParser $parser;
 
     public function __construct($expression)
     {
-        $parser = new ExpressionParser($expression);
-        $this->expression = $parser->getExpression();
+        $this->parser = new ExpressionParser($expression);
+        $this->expression = $this->parser->getExpression();
 
         $this->buildTree($this->root, $this->expression);
     }
 
     public function buildTree(&$expressionTreeNode, $expression)
     {
-        $breakpoint = ExpressionParser::findBreakpointIdx($expression);
-        $operands = ExpressionParser::findOperands($expression, $breakpoint);
+        $breakpoint = $this->parser->findBreakpointIdx($expression);
+        $operands = $this->parser->findOperands($expression, $breakpoint);
 
         $expressionTreeNode = new ExpressionTreeOperation($expression[$breakpoint]);
 
@@ -44,18 +45,3 @@ class ExpressionTree
         return $this->root->calc();
     }
 }
-
-$x = 10;
-$y = 3;
-$z = 2;
-$et = new ExpressionTree("($x + 42)^2+7*$y-$z");
-echo $et->calc() . PHP_EOL;
-
-$et = new ExpressionTree("($x + 42)^2+7*($y-$z)");
-echo $et->calc() . PHP_EOL;
-
-$et = new ExpressionTree("42+7-$z");
-echo $et->calc() . PHP_EOL;
-
-$et = new ExpressionTree("(2+$x)-(2-$z+($y+2))");
-echo $et->calc() . PHP_EOL;

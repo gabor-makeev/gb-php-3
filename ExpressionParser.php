@@ -1,6 +1,7 @@
 <?php
 
 use JetBrains\PhpStorm\ArrayShape;
+use JetBrains\PhpStorm\Pure;
 
 class ExpressionParser
 {
@@ -23,7 +24,36 @@ class ExpressionParser
         return $this->expression;
     }
 
-    public static function adjustParentheses(array &$parsedExpression)
+    public function findBreakpointIdx($parsedExpression): int
+    {
+        $operatorElements = $this->getExpressionOperatorsPriorities($parsedExpression);
+        $elementsWithLowestPriority = $this->getOperatorsWithLowestPriority($operatorElements);
+
+        return end($elementsWithLowestPriority)["index"];
+    }
+
+    #[ArrayShape(["leftOperand" => "string", "rightOperand" => "string"])]
+    public function findOperands($expression, $breakpointIdx): array
+    {
+        $leftOperand = [];
+        $rightOperand = [];
+        foreach ($expression as $idx => $element) {
+            if ($idx < $breakpointIdx)
+                $leftOperand[] = $element;
+            if ($idx > $breakpointIdx)
+                $rightOperand[] = $element;
+        }
+
+        $this->adjustParentheses($leftOperand);
+        $this->adjustParentheses($rightOperand);
+
+        return [
+            "leftOperand" => implode("", $leftOperand),
+            "rightOperand" => implode("", $rightOperand)
+        ];
+    }
+
+    protected function getParentheses(array $parsedExpression): array
     {
         $parentheses = [];
         foreach ($parsedExpression as $idx => $element) {
@@ -33,6 +63,66 @@ class ExpressionParser
                     "index" => $idx
                 ];
         }
+        return $parentheses;
+    }
+
+    // getExpressionOperatorsPriorities() finds operators in the parsed expression and returns an array with them prioritized
+    #[Pure]
+    protected function getExpressionOperatorsPriorities(array $parsedExpression): array
+    {
+        $priorityModifier = 0;
+        $operatorElements = [];
+
+        foreach ($parsedExpression as $elementIdx => $element) {
+
+            if ($element === "(")
+                $priorityModifier += 2;
+
+            if ($element === ")")
+                $priorityModifier -= 2;
+
+            if ($this->isOperator($element)) {
+                $operatorElements[] = [
+                    "name" => $element,
+                    "priority" => self::OPERATIONS_PRIORITIES[$element] + $priorityModifier,
+                    "index" => $elementIdx
+                ];
+            }
+        }
+
+        return $operatorElements;
+    }
+
+    // getOperatorsWithLowestPriority() check an array of prioritized operators and returns an array of those of the lowest priority
+    protected function getOperatorsWithLowestPriority(array $operators): array
+    {
+        $elementsWithLowestPriority = [];
+
+        foreach ($operators as $operator) {
+            if ($operator["priority"] === $this->getLowestPriorityAmongOperators($operators))
+                $elementsWithLowestPriority[] = $operator;
+        }
+
+        return $elementsWithLowestPriority;
+    }
+
+    // getLowestPriorityAmongOperators() checks an array of prioritized operators and find the value of the lowest priority among them
+    protected function getLowestPriorityAmongOperators(array $operators): int
+    {
+        $lowestPriority = $operators[0]["priority"];
+
+        foreach ($operators as $operatorElement) {
+            if ($operatorElement["priority"] < $lowestPriority)
+                $lowestPriority = $operatorElement["priority"];
+        }
+
+        return $lowestPriority;
+    }
+
+    // adjustParentheses() removes a single pair of parentheses/removes 1 parenthesis/equalizes unequal pairs of parentheses
+    protected function adjustParentheses(array &$parsedExpression)
+    {
+        $parentheses = $this->getParentheses($parsedExpression);
 
         if (
             count($parentheses) === 2
@@ -48,89 +138,42 @@ class ExpressionParser
         }
 
         if (count($parentheses) % 2 !== 0) {
-            $openingParentheses = array_filter($parentheses, function ($item) {
-                return $item["element"] === "(";
-            });
-            $closingParentheses = array_filter($parentheses, function ($item) {
-                return $item["element"] === ")";
-            });
-
-            if ($openingParentheses > $closingParentheses) {
-                foreach ($openingParentheses as $idx => $openingParenthesis) {
-                    if (isset($openingParentheses[$idx + 1]) && $openingParenthesis["index"] === $openingParentheses[$idx + 1]["index"] - 1) {
-                        array_splice($parsedExpression, $openingParenthesis["index"], 1);
-                    }
-                }
-            }
-
-            if ($closingParentheses > $openingParentheses) {
-                foreach ($closingParentheses as $idx => $closingParenthesis) {
-                    if (isset($closingParentheses[$idx + 1]) && $closingParenthesis["index"] === $closingParentheses[$idx + 1]["index"] - 1) {
-                        array_splice($parsedExpression, $closingParenthesis["index"], 1);
-                    }
-                }
-            }
+            $this->equalizeParentheses($parentheses, $parsedExpression);
         }
     }
 
-    public static function findBreakpointIdx($expression): int
+    // equalizeParentheses() checks opening and closing parenthesis and removes obsolete ones (such can be results of expression split)
+    protected function equalizeParentheses(array $parentheses, array &$parsedExpression): void
     {
-        $priorityModifier = 0;
-        $elementsWithLowestPriority = [];
-        $operatorElements = [];
+        $openingParentheses = array_filter($parentheses, function ($item) {
+            return $item["element"] === "(";
+        });
+        $closingParentheses = array_filter($parentheses, function ($item) {
+            return $item["element"] === ")";
+        });
 
-        foreach ($expression as $elementIdx => $element) {
+        if ($openingParentheses > $closingParentheses) {
+            $this->removeRepeatedParentheses($openingParentheses, $parsedExpression);
+        } elseif ($closingParentheses > $openingParentheses) {
+            $this->removeRepeatedParentheses($closingParentheses, $parsedExpression);
+        }
+    }
 
-            if ($element === "(")
-                $priorityModifier += 2;
-
-            if ($element === ")")
-                $priorityModifier -= 2;
-
-            if (self::isOperator($element)) {
-                $operatorElements[] = [
-                    "name" => $element,
-                    "priority" => self::OPERATIONS_PRIORITIES[$element] + $priorityModifier,
-                    "index" => $elementIdx
-                ];
+    // removeRepeatedParentheses() removes a parenthesis that comes right after another one
+    protected function removeRepeatedParentheses($parentheses, &$parsedExpression): void
+    {
+        foreach ($parentheses as $idx => $parenthesis) {
+            if (
+                isset($parentheses[$idx + 1])
+                && $parenthesis["index"] === $parentheses[$idx + 1]["index"] - 1
+            ) {
+                array_splice($parsedExpression, $parenthesis["index"], 1);
             }
         }
-
-        $lowestPriority = $operatorElements[0]["priority"];
-        foreach ($operatorElements as $operatorElement) {
-            if ($operatorElement["priority"] < $lowestPriority)
-                $lowestPriority = $operatorElement["priority"];
-        }
-
-        foreach ($operatorElements as $operatorElement) {
-            if ($operatorElement["priority"] === $lowestPriority)
-                $elementsWithLowestPriority[] = $operatorElement;
-        }
-
-        return end($elementsWithLowestPriority)["index"];
     }
 
-    #[ArrayShape(["leftOperand" => "string", "rightOperand" => "string"])] public static function findOperands($expression, $breakpointIdx): array
-    {
-        $leftOperand = [];
-        $rightOperand = [];
-        foreach ($expression as $idx => $element) {
-            if ($idx < $breakpointIdx)
-                $leftOperand[] = $element;
-            if ($idx > $breakpointIdx)
-                $rightOperand[] = $element;
-        }
-
-        self::adjustParentheses($leftOperand);
-        self::adjustParentheses($rightOperand);
-
-        return [
-            "leftOperand" => implode("", $leftOperand),
-            "rightOperand" => implode("", $rightOperand)
-        ];
-    }
-
-    public static function isOperator($element): bool
+    // isOperator() checks whether an element of an expression is an operator (using the OPERATIONS_PRIORITIES constant)
+    protected function isOperator($element): bool
     {
         foreach (self::OPERATIONS_PRIORITIES as $OPERATIONS_PRIORITY_IDX => $OPERATIONS_PRIORITY) {
             if ($element === $OPERATIONS_PRIORITY_IDX)
@@ -139,6 +182,7 @@ class ExpressionParser
         return false;
     }
 
+    // parseExpression() parses the string representation of the expression and returns its array representation
     protected function parseExpression(string $expression): array
     {
         $expressionWithoutSpaces = $this->getExpressionWithoutSpaces($expression);
@@ -161,11 +205,13 @@ class ExpressionParser
         return $parsedExpression;
     }
 
+    // getExpressionWithoutSpaces() returns the string representation of the expression without whitespaces
     protected function getExpressionWithoutSpaces(string $expression): string
     {
         return str_replace(" ", "", $expression);
     }
 
+    // getExpressionAsArray() returns the array representation of a string
     protected function getExpressionAsArray(string $expression): array
     {
         return str_split($expression);
